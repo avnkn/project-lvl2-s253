@@ -8,4 +8,4 @@ if (file_exists($autoloadPath1)) {
     require_once $autoloadPath2;
 }
 
-$object = new Src\Gendiff\genDiff;
+$object = new Src\Gendiff\GenDiff;
