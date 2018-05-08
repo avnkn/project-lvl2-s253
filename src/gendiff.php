@@ -45,7 +45,6 @@ DOC;
             $x = 0;
         } else {
             return $this->handlerJson($firstFileString, $secondFileString);
-
         }
     }
 
@@ -73,7 +72,7 @@ DOC;
             foreach ($firstFileArray as $key => $value) {
                 if (array_key_exists($key, $secondFileArray)) {
                     if ($value === $secondFileArray[$key]) {
-                        $result[] = "  $key: " . $this->transformBooleanString($value) . PHP_EOL;;
+                        $result[] = "  $key: " . $this->transformBooleanString($value) . PHP_EOL;
                     } else {
                         $result[] = "- $key: " . $this->transformBooleanString($value). PHP_EOL;
                         $result[] = "+ $key: " . $this->transformBooleanString($secondFileArray[$key]) . PHP_EOL;
