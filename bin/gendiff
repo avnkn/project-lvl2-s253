@@ -9,3 +9,4 @@ if (file_exists($autoloadPath1)) {
 }
 
 $object = new Src\Gendiff\GenDiff;
+$object->cli();

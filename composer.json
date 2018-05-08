@@ -15,7 +15,7 @@
   },
   "require-dev": {
     "squizlabs/php_codesniffer": "3.*",
-    "phpunit/phpunit": "*"
+    "phpunit/phpunit": "^7"
   },
   "scripts": {
     "phpcs": "phpcs",
@@ -23,6 +23,7 @@
     "test": "phpunit tests"
   },
   "autoload": {
-    "files": ["src/gendiff.php"]
+    "files": ["src/gendiff.php"],
+    "classmap": ["src/"]
   }
 }

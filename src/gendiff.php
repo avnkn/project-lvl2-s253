@@ -5,7 +5,7 @@ use function Funct\true;
 
 class GenDiff
 {
-    public function __construct()
+    public function cli()
     {
         $doc = <<<DOC
         Generate diff
@@ -22,7 +22,7 @@ DOC;
         $firstFileName = $args["<firstFile>"];
         $secondFileName = $args["<secondFile>"];
         $format = $args["--format"];
-        $this->handler($format, $firstFileName, $secondFileName);
+        echo $this->handler($format, $firstFileName, $secondFileName);
     }
 
     public function handler($format, $firstFileName, $secondFileName)
@@ -44,7 +44,8 @@ DOC;
         } elseif ($format == "ini") {
             $x = 0;
         } else {
-            $this->handlerJson($firstFileString, $secondFileString);
+            return $this->handlerJson($firstFileString, $secondFileString);
+
         }
     }
 
@@ -64,6 +65,7 @@ DOC;
 
     private function handlerJson($firstFileString, $secondFileString)
     {
+        $result =[];
         try {
             $firstFileArray = json_decode($firstFileString, true);
             $secondFileArray = json_decode($secondFileString, true);
@@ -71,21 +73,23 @@ DOC;
             foreach ($firstFileArray as $key => $value) {
                 if (array_key_exists($key, $secondFileArray)) {
                     if ($value === $secondFileArray[$key]) {
-                        echo "  $key: " . $this->transformBooleanString($value) . PHP_EOL;
+                        $result[] = "  $key: " . $this->transformBooleanString($value) . PHP_EOL;;
                     } else {
-                        echo "- $key: " . $this->transformBooleanString($value). PHP_EOL;
-                        echo "+ $key: " . $this->transformBooleanString($secondFileArray[$key]) . PHP_EOL;
+                        $result[] = "- $key: " . $this->transformBooleanString($value). PHP_EOL;
+                        $result[] = "+ $key: " . $this->transformBooleanString($secondFileArray[$key]) . PHP_EOL;
                     }
                 } else {
-                    echo "- $key: " . $this->transformBooleanString($value) . PHP_EOL;
+                    $result[] = "- $key: " . $this->transformBooleanString($value) . PHP_EOL;
                 }
             }
             $diffArray = array_diff_key($secondFileArray, $firstFileArray);
             foreach ($diffArray as $key => $value) {
-                echo "+ $key: " . $this->transformBooleanString($value) . PHP_EOL;
+                $result[] = "+ $key: " . $this->transformBooleanString($value) . PHP_EOL;
             }
         } catch (Exception $e) {
             echo 'Ошибка: ',  $e->getMessage(), PHP_EOL;
         }
+        $resultString = implode('', $result);
+        return $resultString;
     }
 }
