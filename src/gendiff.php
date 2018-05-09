@@ -2,6 +2,7 @@
 namespace Differ;
 
 use function Funct\true;
+use Symfony\Component\Yaml\Yaml;
 
 function genDiff($format, $firstFileName, $secondFileName)
 {
@@ -18,7 +19,7 @@ function genDiff($format, $firstFileName, $secondFileName)
         exit;
     }
     if ($format == "yaml") {
-        return null;
+        return genDiffYaml($firstFileString, $secondFileString);
     } elseif ($format == "ini") {
         return null;
     } else {
@@ -26,27 +27,10 @@ function genDiff($format, $firstFileName, $secondFileName)
     }
 }
 
-function transformBooleanString($arg)
+function genDiffArray($firstFileArray, $secondFileArray)
 {
-    if (is_bool($arg)) {
-        if ($arg == true) {
-            $result = 'true';
-        } else {
-            $result = 'false';
-        }
-    } else {
-        $result = $arg;
-    }
-    return $result;
-}
-
-function genDiffJson($firstFileString, $secondFileString)
-{
-    $result =[];
     try {
-        $firstFileArray = json_decode($firstFileString, true);
-        $secondFileArray = json_decode($secondFileString, true);
-
+        $result =[];
         foreach ($firstFileArray as $key => $value) {
             if (array_key_exists($key, $secondFileArray)) {
                 if ($value === $secondFileArray[$key]) {
@@ -68,4 +52,36 @@ function genDiffJson($firstFileString, $secondFileString)
     }
     $resultString = implode('', $result);
     return $resultString;
+}
+function transformBooleanString($arg)
+{
+    if (is_bool($arg)) {
+        if ($arg == true) {
+            $result = 'true';
+        } else {
+            $result = 'false';
+        }
+    } else {
+        $result = $arg;
+    }
+    return $result;
+}
+
+function genDiffJson($firstFileString, $secondFileString)
+{
+        $firstFileArray = json_decode($firstFileString, true);
+        $secondFileArray = json_decode($secondFileString, true);
+        return genDiffArray($firstFileArray, $secondFileArray);
+}
+
+function yamlParse($stringYaml)
+{
+    return Yaml::parse($stringYaml, Yaml::PARSE_OBJECT);
+}
+
+function genDiffYaml($firstFileString, $secondFileString)
+{
+    $firstFileArray = yamlParse($firstFileString);
+    $secondFileArray = yamlParse($secondFileString);
+    return genDiffArray($firstFileArray, $secondFileArray);
 }

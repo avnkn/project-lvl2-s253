@@ -23,7 +23,6 @@ $args = Docopt::handle($doc);
 $firstFileName = $args["<firstFile>"];
 $secondFileName = $args["<secondFile>"];
 $format = $args["--format"];
-echo $format;
 
 $diff = \Differ\genDiff($format, $firstFileName, $secondFileName);
 print_r($diff);

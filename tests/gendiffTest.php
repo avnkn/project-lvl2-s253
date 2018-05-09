@@ -17,5 +17,6 @@ class gendiffTest extends TestCase
 
 DOC;
         $this->assertEquals($res1, \Differ\genDiff('json', 'tests/data/before.json', 'tests/data/after.json'));
+        $this->assertEquals($res1, \Differ\genDiff('yaml', 'tests/data/before.yml', 'tests/data/after.yml'));
     }
 }
