@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class gendiffTest extends TestCase
 {
-    public function testHandler(){
+    public function testgenDiff(){
         $res1 = <<<DOC
   host: hexlet.io
 - timeout: 50
@@ -16,7 +16,6 @@ class gendiffTest extends TestCase
 + verbose: true
 
 DOC;
-        $object = new \Src\Gendiff\GenDiff;
-        $this->assertEquals($res1, $object->handler('json', 'tests/data/before.json', 'tests/data/after.json'));
+        $this->assertEquals($res1, \Differ\genDiff('json', 'tests/data/before.json', 'tests/data/after.json'));
     }
 }
