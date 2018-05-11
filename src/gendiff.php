@@ -9,14 +9,15 @@ function genDiff($format, $firstFileName, $secondFileName)
 {
     $firstFileArray = fileParse($firstFileName);
     $secondFileArray = fileParse($secondFileName);
-    return genDiffArrays($firstFileArray, $secondFileArray);
+    $p = genDiffArrays($firstFileArray, $secondFileArray);
+    return $p;
 }
 
 function fileParse($filename)
 {
     try {
-        if (!file_exists($filename)){
-          throw new Exception("Error: File '$filename' does not exist" . PHP_EOL);
+        if (!file_exists($filename)) {
+            throw new Exception("Error: File '$filename' does not exist" . PHP_EOL);
         }
         $extensionFile = getExtensionFile($filename);
 
@@ -26,11 +27,10 @@ function fileParse($filename)
             $FileArray = null;
         } elseif ($extensionFile == "json") {
             $FileArray = jsonParse($filename);
-        } else{
+        } else {
             throw new Exception("Error: Extension file is not yaml, yml, ini, json" . PHP_EOL);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         fwrite(STDERR, $e->getMessage());
         return null;
     }
@@ -39,8 +39,8 @@ function fileParse($filename)
 
 function getExtensionFile($filename)
 {
-  $path_info = pathinfo($filename);
-  return $path_info['extension'];
+    $path_info = pathinfo($filename);
+    return $path_info['extension'];
 }
 
 function jsonParse($filename)
@@ -58,26 +58,22 @@ function yamlParse($filename)
 function genDiffArrays($firstFileArray, $secondFileArray)
 {
     $result =[];
-    array_walk($firstFileArray,
-        function($value, $key) use (&$result, $secondFileArray) {
-            if (array_key_exists($key, $secondFileArray)) {
-                if ($value === $secondFileArray[$key]) {
-                    $result[] = "  $key: " . stringify($value) . PHP_EOL;
-                } else {
-                    $result[] = "- $key: " . stringify($value). PHP_EOL;
-                    $result[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
-                }
+    array_walk($firstFileArray, function ($value, $key) use (&$result, $secondFileArray) {
+        if (array_key_exists($key, $secondFileArray)) {
+            if ($value === $secondFileArray[$key]) {
+                $result[] = "  $key: " . stringify($value) . PHP_EOL;
             } else {
-                $result[] = "- $key: " . stringify($value) . PHP_EOL;
+                $result[] = "- $key: " . stringify($value). PHP_EOL;
+                $result[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
             }
+        } else {
+            $result[] = "- $key: " . stringify($value) . PHP_EOL;
         }
-    );
+    });
     $diffArray = array_diff_key($secondFileArray, $firstFileArray);
-    array_walk($diffArray,
-        function($value, $key) use (&$result, $secondFileArray) {
-            $result[] = "+ $key: " . stringify($value) . PHP_EOL;
-        }
-    );
+    array_walk($diffArray, function ($value, $key) use (&$result, $secondFileArray) {
+        $result[] = "+ $key: " . stringify($value) . PHP_EOL;
+    });
     $resultString = implode('', $result);
     return $resultString;
 }
@@ -95,3 +91,5 @@ function stringify($arg)
     }
     return $result;
 }
+// $r = genDiff("", "../tests/data/before2.json", "../tests/data/after2.json");
+// print_r($r);
