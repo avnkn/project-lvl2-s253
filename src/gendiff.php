@@ -2,39 +2,36 @@
 namespace Differ;
 
 use \Exception;
-use function Funct\true;
+use function Funct\Collection\union;
 use Symfony\Component\Yaml\Yaml;
 
-function genDiff($format, $firstFileName, $secondFileName)
+function genDiff($format, $pathToFile1, $pathToFile2)
 {
-    $firstFileArray = fileParse($firstFileName);
-    $secondFileArray = fileParse($secondFileName);
-    $p = genDiffArrays($firstFileArray, $secondFileArray);
-    return $p;
+    $arrayFromFile1 = getArray($pathToFile1);
+    $arrayFromFile2 = getArray($pathToFile2);
+    return genDiffArrays($arrayFromFile1, $arrayFromFile2);
 }
 
-function fileParse($filename)
+function getArray($pathToFile)
+{
+    $stringFromFile = getFileAsString($pathToFile);
+    $extensionFile = getExtensionFile($pathToFile);
+    $arrayFromFile = parsingString($stringFromFile, $extensionFile);
+    return $arrayFromFile;
+}
+
+function getFileAsString($filename)
 {
     try {
         if (!file_exists($filename)) {
             throw new Exception("Error: File '$filename' does not exist" . PHP_EOL);
         }
-        $extensionFile = getExtensionFile($filename);
-
-        if ($extensionFile == "yaml" or $extensionFile == "yml") {
-            $FileArray = yamlParse($filename);
-        } elseif ($extensionFile == "ini") {
-            $FileArray = null;
-        } elseif ($extensionFile == "json") {
-            $FileArray = jsonParse($filename);
-        } else {
-            throw new Exception("Error: Extension file is not yaml, yml, ini, json" . PHP_EOL);
-        }
     } catch (Exception $e) {
         fwrite(STDERR, $e->getMessage());
         return null;
     }
-    return $FileArray;
+    $stringFromFile = file_get_contents($filename);
+    return $stringFromFile;
 }
 
 function getExtensionFile($filename)
@@ -43,16 +40,33 @@ function getExtensionFile($filename)
     return $path_info['extension'];
 }
 
-function jsonParse($filename)
+function parsingString($stringFromFile, $extensionFile)
 {
-    $stringJson = file_get_contents($filename);
-    return json_decode($stringJson, true);
+    try {
+        if ($extensionFile == "yaml" or $extensionFile == "yml") {
+            $arrayFromFile = yamlParse($stringFromFile);
+        } elseif ($extensionFile == "ini") {
+            $arrayFromFile = null;
+        } elseif ($extensionFile == "json") {
+            $arrayFromFile = jsonParse($stringFromFile);
+        } else {
+            throw new Exception("Error: Extension file is not yaml, yml, ini, json" . PHP_EOL);
+        }
+    } catch (Exception $e) {
+        fwrite(STDERR, $e->getMessage());
+        return null;
+    }
+    return $arrayFromFile;
 }
 
-function yamlParse($filename)
+function jsonParse($stringFromFile)
 {
-    $stringYaml = file_get_contents($filename);
-    return Yaml::parse($stringYaml, Yaml::PARSE_OBJECT);
+    return json_decode($stringFromFile, true);
+}
+
+function yamlParse($stringFromFile)
+{
+    return Yaml::parse($stringFromFile, Yaml::PARSE_OBJECT);
 }
 
 function genDiffArrays($firstFileArray, $secondFileArray)
@@ -91,5 +105,3 @@ function stringify($arg)
     }
     return $result;
 }
-// $r = genDiff("", "../tests/data/before2.json", "../tests/data/after2.json");
-// print_r($r);
