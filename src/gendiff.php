@@ -2,13 +2,18 @@
 namespace Differ;
 
 use \Exception;
-use function Funct\Collection\union;
+use Funct\Collection;
 use Symfony\Component\Yaml\Yaml;
 
-function genDiff($format, $pathToFile1, $pathToFile2)
+function genDiff($pathToFile1, $pathToFile2, $format = "json")
 {
-    $arrayFromFile1 = getArray($pathToFile1);
-    $arrayFromFile2 = getArray($pathToFile2);
+    try {
+        $arrayFromFile1 = getArray($pathToFile1);
+        $arrayFromFile2 = getArray($pathToFile2);
+    } catch (Exception $e) {
+        fwrite(STDERR, $e->getMessage());
+        return null;
+    }
     return genDiffArrays($arrayFromFile1, $arrayFromFile2);
 }
 
@@ -22,13 +27,8 @@ function getArray($pathToFile)
 
 function getFileAsString($filename)
 {
-    try {
-        if (!file_exists($filename)) {
-            throw new Exception("Error: File '$filename' does not exist" . PHP_EOL);
-        }
-    } catch (Exception $e) {
-        fwrite(STDERR, $e->getMessage());
-        return null;
+    if (!file_exists($filename)) {
+        throw new Exception("Error: File '$filename' does not exist" . PHP_EOL);
     }
     $stringFromFile = file_get_contents($filename);
     return $stringFromFile;
@@ -42,22 +42,20 @@ function getExtensionFile($filename)
 
 function parsingString($stringFromFile, $extensionFile)
 {
-    try {
-        if ($extensionFile == "yaml" or $extensionFile == "yml") {
-            $arrayFromFile = yamlParse($stringFromFile);
-        } elseif ($extensionFile == "ini") {
-            $arrayFromFile = null;
-        } elseif ($extensionFile == "json") {
-            $arrayFromFile = jsonParse($stringFromFile);
-        } else {
-            throw new Exception("Error: Extension file is not yaml, yml, ini, json" . PHP_EOL);
-        }
-    } catch (Exception $e) {
-        fwrite(STDERR, $e->getMessage());
-        return null;
+    if (!in_array($extensionFile, ["yaml", "yml", "ini", "json"])) {
+        throw new Exception("The extension files is not: 'yaml', 'yml', 'ini', 'json'.\n" . PHP_EOL);
     }
+    $arr =[
+        "yaml" => "Differ\yamlParse",
+        "yml" => "Differ\yamlParse",
+        "ini" => "null",
+        "json" => "Differ\jsonParse"
+    ];
+    $nameFunc =  $arr[$extensionFile];
+    $arrayFromFile = $nameFunc($stringFromFile);
     return $arrayFromFile;
 }
+
 
 function jsonParse($stringFromFile)
 {
@@ -71,25 +69,49 @@ function yamlParse($stringFromFile)
 
 function genDiffArrays($firstFileArray, $secondFileArray)
 {
-    $result =[];
-    array_walk($firstFileArray, function ($value, $key) use (&$result, $secondFileArray) {
-        if (array_key_exists($key, $secondFileArray)) {
-            if ($value === $secondFileArray[$key]) {
-                $result[] = "  $key: " . stringify($value) . PHP_EOL;
+    $unionArray = Collection\union($firstFileArray, $secondFileArray);
+    $unionArrrayKey = array_keys($unionArray);
+
+    $arrResult[] = "{" . PHP_EOL;
+    $arrResult[] = array_map(function ($key) use ($firstFileArray, $secondFileArray) {
+        if (array_key_exists($key, $firstFileArray)) {
+            if (array_key_exists($key, $secondFileArray)) {
+                if ($firstFileArray[$key] == $secondFileArray[$key]) {
+                    $iter = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                } else {
+                    $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL
+                          . "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+                }
             } else {
-                $result[] = "- $key: " . stringify($value). PHP_EOL;
-                $result[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+                $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
             }
         } else {
-            $result[] = "- $key: " . stringify($value) . PHP_EOL;
+            $iter = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
         }
-    });
-    $diffArray = array_diff_key($secondFileArray, $firstFileArray);
-    array_walk($diffArray, function ($value, $key) use (&$result, $secondFileArray) {
-        $result[] = "+ $key: " . stringify($value) . PHP_EOL;
-    });
-    $resultString = implode('', $result);
+        return $iter;
+    }, $unionArrrayKey);
+    $arrResult[] = "}" . PHP_EOL;
+    $arrResultFlatten = Collection\flatten($arrResult, 2);
+    $resultString = implode('', $arrResultFlatten);
     return $resultString;
+
+    //альтернатива строчек 78-95-
+    // foreach ($unionArrrayKey as $key) {
+    //     if (array_key_exists($key, $firstFileArray)) {
+    //         if (array_key_exists($key, $secondFileArray)) {
+    //             if ($firstFileArray[$key] == $secondFileArray[$key]) {
+    //                 $arrResult[] = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+    //             } else {
+    //                 $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+    //                 $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+    //             }
+    //         } else {
+    //             $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+    //         }
+    //     } else {
+    //         $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+    //     }
+    // }
 }
 
 function stringify($arg)
