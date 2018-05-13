@@ -20,7 +20,7 @@ function genDiff($pathToFile1, $pathToFile2, $format = "json")
 function getArray($pathToFile)
 {
     $stringFromFile = getFileAsString($pathToFile);
-    $extensionFile = getExtensionFile($pathToFile);
+    $extensionFile = getFileExtension($pathToFile);
     $arrayFromFile = parsingString($stringFromFile, $extensionFile);
     return $arrayFromFile;
 }
@@ -34,7 +34,7 @@ function getFileAsString($filename)
     return $stringFromFile;
 }
 
-function getExtensionFile($filename)
+function getFileExtension($filename)
 {
     $path_info = pathinfo($filename);
     return $path_info['extension'];
@@ -76,18 +76,17 @@ function genDiffArrays($firstFileArray, $secondFileArray)
         if (array_key_exists($key, $firstFileArray)) {
             if (array_key_exists($key, $secondFileArray)) {
                 if ($firstFileArray[$key] == $secondFileArray[$key]) {
-                    $iter = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                    $item[] = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
                 } else {
-                    $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL
-                          . "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+                    $item[] = "- $key: " . stringify($firstFileArray[$key])  . PHP_EOL;
+                    $item[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
                 }
             } else {
-                $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                $item[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
             }
         } else {
-            $iter = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+            $item[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
         }
-        $item[] = $iter;
         return $item;
     }, $initial);
     $arrResult[] = "}" . PHP_EOL;
