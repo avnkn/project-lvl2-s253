@@ -14,7 +14,9 @@ function genDiff($pathToFile1, $pathToFile2, $format = "json")
         fwrite(STDERR, $e->getMessage());
         return null;
     }
-    return genDiffArrays($arrayFromFile1, $arrayFromFile2);
+    $astTree = genDiffAst($arrayFromFile1, $arrayFromFile2);
+    $resultString = genStringIsAst($astTree);
+    return $resultString;
 }
 
 function getArray($pathToFile)
@@ -40,7 +42,125 @@ function getFileExtension($filename)
     return $path_info['extension'];
 }
 
-function genDiffArrays($firstFileArray, $secondFileArray)
+function unionKey($array1, $array2)
+{
+    $arrResult1 = array_map(null, $array1);
+    $arrResult2 = array_map(null, $array2);
+    $unionKey = array_merge($arrResult1, $arrResult2);
+    return $unionKey;
+}
+
+function genDiffAst($firstFileArray, $secondFileArray)
+{
+    $unionArray = unionKey($firstFileArray, $secondFileArray);
+    $unionArrrayKey = array_keys($unionArray);
+    $funcArrayReduce = function ($item, $key) use ($firstFileArray, $secondFileArray) {
+        if (array_key_exists($key, $firstFileArray)) {
+            if (array_key_exists($key, $secondFileArray)) {
+                if (!is_array($firstFileArray[$key]) and !is_array($secondFileArray[$key])) {
+                    if ($firstFileArray[$key] == $secondFileArray[$key]) {
+                        $item[] = [
+                            "key" => "$key",
+                            "diff" => " ",
+                            "children" => $secondFileArray[$key]
+                        ];
+                    } else {
+                        $item[] = [
+                            "key" => "$key",
+                            "diff" => "-",
+                            "children" => $firstFileArray[$key]
+                        ];
+                        $item[] = [
+                            "key" => "$key",
+                            "diff" => "+",
+                            "children" => $secondFileArray[$key]
+                        ];
+                    }
+                } else {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => " ",
+                        "children" => genDiffAst($firstFileArray[$key], $secondFileArray[$key])
+                    ];
+                }
+            } else {
+                if (is_array($firstFileArray[$key])) {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => "-",
+                        "children" => genDiffAst($firstFileArray[$key], $firstFileArray[$key])
+                    ];
+                } else {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => "-",
+                        "children" => $firstFileArray[$key]
+                    ];
+                }
+            }
+        } else {
+            if (is_array($secondFileArray[$key])) {
+                $item[] = [
+                    "key" => "$key",
+                    "diff" => "+",
+                    "children" => genDiffAst($secondFileArray[$key], $secondFileArray[$key])
+                ];
+            } else {
+                $item[] = [
+                    "key" => "$key",
+                    "diff" => "+",
+                    "children" => $secondFileArray[$key]
+                ];
+            }
+        }
+        return $item;
+    };
+
+    $arrResult = array_reduce($unionArrrayKey, $funcArrayReduce);
+    return $arrResult;
+}
+
+function genStringIsAst($astTree, $indent = "")
+{
+    $initial[] = "{" . PHP_EOL;
+    $funcArrayReduce = function ($item, $value) use ($indent) {
+        if (is_array($value['children'])) {
+            $item[] = $indent . "  " . $value['diff'] . " " . $value['key'] . ": ";
+            $indentActual = $indent . "    ";
+            $item[] = genStringIsAst($value['children'], $indentActual);
+        } else {
+            $item[] = $indent . "  " . $value['diff'] . " " . $value['key'] . ": " . stringify($value['children'])
+                . PHP_EOL;
+        }
+        return $item;
+    };
+    $arrResult = array_reduce($astTree, $funcArrayReduce, $initial);
+    $arrResult[] = $indent . "}" . PHP_EOL;
+
+    $strResult = implode('', $arrResult);
+    return $strResult;
+}
+
+function stringify($arg)
+{
+    if (is_bool($arg)) {
+        if ($arg == true) {
+            $result = 'true';
+        } else {
+            $result = 'false';
+        }
+    } else {
+        $result = $arg;
+    }
+    return $result;
+}
+
+
+
+
+
+
+function genDiffArraysFirstLevel($firstFileArray, $secondFileArray)
 {
     $unionArray = Collection\union($firstFileArray, $secondFileArray);
     $unionArrrayKey = array_keys($unionArray);
@@ -66,7 +186,8 @@ function genDiffArrays($firstFileArray, $secondFileArray)
     $resultString = implode('', $arrResult);
     return $resultString;
 }
-function genDiffArraysMap($firstFileArray, $secondFileArray)
+
+function genDiffArraysMapFirstLevel($firstFileArray, $secondFileArray)
 {
     $unionArray = Collection\union($firstFileArray, $secondFileArray);
     $unionArrrayKey = array_keys($unionArray);
@@ -94,7 +215,7 @@ function genDiffArraysMap($firstFileArray, $secondFileArray)
     $resultString = implode('', $arrResultFlatten);
     return $resultString;
 }
-function genDiffArraysForeach($firstFileArray, $secondFileArray)
+function genDiffArraysForeachFirstLevel($firstFileArray, $secondFileArray)
 {
     $unionArray = Collection\union($firstFileArray, $secondFileArray);
     $unionArrrayKey = array_keys($unionArray);
@@ -118,18 +239,4 @@ function genDiffArraysForeach($firstFileArray, $secondFileArray)
     $arrResult[] = "}" . PHP_EOL;
     $resultString = implode('', $arrResult);
     return $resultString;
-}
-
-function stringify($arg)
-{
-    if (is_bool($arg)) {
-        if ($arg == true) {
-            $result = 'true';
-        } else {
-            $result = 'false';
-        }
-    } else {
-        $result = $arg;
-    }
-    return $result;
 }
