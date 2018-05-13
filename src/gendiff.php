@@ -1,9 +1,9 @@
 <?php
 namespace Differ;
 
+use Differ\Parsers;
 use \Exception;
 use Funct\Collection;
-use Symfony\Component\Yaml\Yaml;
 
 function genDiff($pathToFile1, $pathToFile2, $format = "json")
 {
@@ -21,7 +21,7 @@ function getArray($pathToFile)
 {
     $stringFromFile = getFileAsString($pathToFile);
     $extensionFile = getFileExtension($pathToFile);
-    $arrayFromFile = parsingString($stringFromFile, $extensionFile);
+    $arrayFromFile =  Parsers\parsingString($stringFromFile, $extensionFile);
     return $arrayFromFile;
 }
 
@@ -38,33 +38,6 @@ function getFileExtension($filename)
 {
     $path_info = pathinfo($filename);
     return $path_info['extension'];
-}
-
-function parsingString($stringFromFile, $extensionFile)
-{
-    if (!in_array($extensionFile, ["yaml", "yml", "ini", "json"])) {
-        throw new Exception("The extension files is not: 'yaml', 'yml', 'ini', 'json'.\n" . PHP_EOL);
-    }
-    $arr =[
-        "yaml" => "Differ\yamlParse",
-        "yml" => "Differ\yamlParse",
-        "ini" => "null",
-        "json" => "Differ\jsonParse"
-    ];
-    $nameFunc =  $arr[$extensionFile];
-    $arrayFromFile = $nameFunc($stringFromFile);
-    return $arrayFromFile;
-}
-
-
-function jsonParse($stringFromFile)
-{
-    return json_decode($stringFromFile, true);
-}
-
-function yamlParse($stringFromFile)
-{
-    return Yaml::parse($stringFromFile, Yaml::PARSE_OBJECT);
 }
 
 function genDiffArrays($firstFileArray, $secondFileArray)

@@ -24,7 +24,10 @@
     "test": "phpunit tests"
   },
   "autoload": {
-    "files": ["src/gendiff.php"],
+    "files": [
+        "src/gendiff.php",
+        "src/parsers.php"
+    ],
     "classmap": ["src/"]
   }
 }
