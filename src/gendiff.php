@@ -71,6 +71,33 @@ function genDiffArrays($firstFileArray, $secondFileArray)
 {
     $unionArray = Collection\union($firstFileArray, $secondFileArray);
     $unionArrrayKey = array_keys($unionArray);
+    $initial[] = "{" . PHP_EOL;
+    $arrResult = array_reduce($unionArrrayKey, function ($item, $key) use ($firstFileArray, $secondFileArray) {
+        if (array_key_exists($key, $firstFileArray)) {
+            if (array_key_exists($key, $secondFileArray)) {
+                if ($firstFileArray[$key] == $secondFileArray[$key]) {
+                    $iter = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                } else {
+                    $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL
+                          . "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+                }
+            } else {
+                $iter = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+            }
+        } else {
+            $iter = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+        }
+        $item[] = $iter;
+        return $item;
+    }, $initial);
+    $arrResult[] = "}" . PHP_EOL;
+    $resultString = implode('', $arrResult);
+    return $resultString;
+}
+function genDiffArraysMap($firstFileArray, $secondFileArray)
+{
+    $unionArray = Collection\union($firstFileArray, $secondFileArray);
+    $unionArrrayKey = array_keys($unionArray);
 
     $arrResult[] = "{" . PHP_EOL;
     $arrResult[] = array_map(function ($key) use ($firstFileArray, $secondFileArray) {
@@ -94,24 +121,31 @@ function genDiffArrays($firstFileArray, $secondFileArray)
     $arrResultFlatten = Collection\flatten($arrResult, 2);
     $resultString = implode('', $arrResultFlatten);
     return $resultString;
-
-    //альтернатива строчек 78-95-
-    // foreach ($unionArrrayKey as $key) {
-    //     if (array_key_exists($key, $firstFileArray)) {
-    //         if (array_key_exists($key, $secondFileArray)) {
-    //             if ($firstFileArray[$key] == $secondFileArray[$key]) {
-    //                 $arrResult[] = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
-    //             } else {
-    //                 $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
-    //                 $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
-    //             }
-    //         } else {
-    //             $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
-    //         }
-    //     } else {
-    //         $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
-    //     }
-    // }
+}
+function genDiffArraysForeach($firstFileArray, $secondFileArray)
+{
+    $unionArray = Collection\union($firstFileArray, $secondFileArray);
+    $unionArrrayKey = array_keys($unionArray);
+    $arrResult[] = "{" . PHP_EOL;
+    foreach ($unionArrrayKey as $key) {
+        if (array_key_exists($key, $firstFileArray)) {
+            if (array_key_exists($key, $secondFileArray)) {
+                if ($firstFileArray[$key] == $secondFileArray[$key]) {
+                    $arrResult[] = "  $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                } else {
+                    $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+                    $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+                }
+            } else {
+                $arrResult[] = "- $key: " . stringify($firstFileArray[$key]) . PHP_EOL;
+            }
+        } else {
+            $arrResult[] = "+ $key: " . stringify($secondFileArray[$key]) . PHP_EOL;
+        }
+    }
+    $arrResult[] = "}" . PHP_EOL;
+    $resultString = implode('', $arrResult);
+    return $resultString;
 }
 
 function stringify($arg)
