@@ -14,8 +14,18 @@ function genDiff($pathToFile1, $pathToFile2, $format = "json")
         fwrite(STDERR, $e->getMessage());
         return null;
     }
-    $astTree = genDiffAst($arrayFromFile1, $arrayFromFile2);
-    $resultString = genStringIsAst($astTree);
+    $resultString = genResultString($arrayFromFile1, $arrayFromFile2, $format);
+    return $resultString;
+}
+function genResultString($arrayFromFile1, $arrayFromFile2, $format)
+{
+    if ($format == 'plain') {
+        $astTree = genPlainDiffAst($arrayFromFile1, $arrayFromFile2);
+        $resultString = genPlainStringIsAst($astTree);
+    } else {
+        $astTree = genJsonDiffAst($arrayFromFile1, $arrayFromFile2);
+        $resultString = genStringIsAst($astTree);
+    }
     return $resultString;
 }
 
@@ -50,7 +60,7 @@ function unionKey($array1, $array2)
     return $unionKey;
 }
 
-function genDiffAst($firstFileArray, $secondFileArray)
+function genJsonDiffAst($firstFileArray, $secondFileArray)
 {
     $unionArray = unionKey($firstFileArray, $secondFileArray);
     $unionArrrayKey = array_keys($unionArray);
@@ -80,7 +90,7 @@ function genDiffAst($firstFileArray, $secondFileArray)
                     $item[] = [
                         "key" => "$key",
                         "diff" => " ",
-                        "children" => genDiffAst($firstFileArray[$key], $secondFileArray[$key])
+                        "children" => genJsonDiffAst($firstFileArray[$key], $secondFileArray[$key])
                     ];
                 }
             } else {
@@ -88,7 +98,7 @@ function genDiffAst($firstFileArray, $secondFileArray)
                     $item[] = [
                         "key" => "$key",
                         "diff" => "-",
-                        "children" => genDiffAst($firstFileArray[$key], $firstFileArray[$key])
+                        "children" => genJsonDiffAst($firstFileArray[$key], $firstFileArray[$key])
                     ];
                 } else {
                     $item[] = [
@@ -103,7 +113,7 @@ function genDiffAst($firstFileArray, $secondFileArray)
                 $item[] = [
                     "key" => "$key",
                     "diff" => "+",
-                    "children" => genDiffAst($secondFileArray[$key], $secondFileArray[$key])
+                    "children" => genJsonDiffAst($secondFileArray[$key], $secondFileArray[$key])
                 ];
             } else {
                 $item[] = [
@@ -137,6 +147,110 @@ function genStringIsAst($astTree, $indent = "")
     $arrResult = array_reduce($astTree, $funcArrayReduce, $initial);
     $arrResult[] = $indent . "}" . PHP_EOL;
 
+    $strResult = implode('', $arrResult);
+    return $strResult;
+}
+
+function genPlainDiffAst($firstFileArray, $secondFileArray)
+{
+    $unionArray = unionKey($firstFileArray, $secondFileArray);
+    $unionArrrayKey = array_keys($unionArray);
+    $funcArrayReduce = function ($item, $key) use ($firstFileArray, $secondFileArray) {
+        if (array_key_exists($key, $firstFileArray)) {
+            if (array_key_exists($key, $secondFileArray)) {
+                if (!is_array($firstFileArray[$key]) and !is_array($secondFileArray[$key])) {
+                    if ($firstFileArray[$key] == $secondFileArray[$key]) {
+                        $item[] = [
+                            "key" => "$key",
+                            "diff" => "=",
+                            "children" => $secondFileArray[$key]
+                        ];
+                    } else {
+                        $item[] = [
+                            "key" => "$key",
+                            "diff" => "-+",
+                            "children" => $firstFileArray[$key],
+                            "children2"=> "$secondFileArray[$key]"
+
+                        ];
+                    }
+                } else {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => "=",
+                        "children" => genPlainDiffAst($firstFileArray[$key], $secondFileArray[$key])
+                    ];
+                }
+            } else {
+                if (is_array($firstFileArray[$key])) {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => "-",
+                        "children" => genPlainDiffAst($firstFileArray[$key], [])
+                    ];
+                } else {
+                    $item[] = [
+                        "key" => "$key",
+                        "diff" => "-",
+                        "children" => $firstFileArray[$key]
+                    ];
+                }
+            }
+        } else {
+            if (is_array($secondFileArray[$key])) {
+                $item[] = [
+                    "key" => "$key",
+                    "diff" => "+",
+                    "children" => genPlainDiffAst([], $secondFileArray[$key])
+                ];
+            } else {
+                $item[] = [
+                    "key" => "$key",
+                    "diff" => "+",
+                    "children" => $secondFileArray[$key]
+                ];
+            }
+        }
+        return $item;
+    };
+
+    $arrResult = array_reduce($unionArrrayKey, $funcArrayReduce);
+    return $arrResult;
+}
+
+function genPlainStringIsAst($astTree, $path = "")
+{
+    $funcArrayReduce = function ($item, $value) use ($path) {
+        if ($value['diff'] == "-") {
+            $item[] = "Property '$path{$value['key']}' was removed" . PHP_EOL;
+            if (is_array($value['children'])) {
+                $pathActual = $path . "{$value['key']}.";
+                $item[] = genPlainStringIsAst($value['children'], $pathActual);
+            }
+        } elseif ($value['diff'] == "+") {
+            if (is_array($value['children'])) {
+                $item[]  = "Property '$path{$value['key']}' was added with value: 'complex value' "
+                    . PHP_EOL;
+                $pathActual = $path . "{$value['key']}.";
+                $item[] = genPlainStringIsAst($value['children'], $pathActual);
+            } else {
+                $item[] = "Property '$path{$value['key']}' was added with value: '{$value['children']}' "
+                    . PHP_EOL;
+            }
+        } elseif ($value['diff'] == "=") {
+            if (is_array($value['children'])) {
+                $pathActual = $path . "{$value['key']}.";
+                $item[] = genPlainStringIsAst($value['children'], $pathActual);
+            } else {
+                $item[] = "";
+            }
+        } elseif ($value['diff'] == "-+") {
+            $item[] = "Property '$path{$value['key']}' was changed. From '{$value['children']}' to "
+                . "'{$value['children2']}' " . PHP_EOL;
+        }
+        return $item;
+    };
+    $arrResult = array_reduce($astTree, $funcArrayReduce);
     $strResult = implode('', $arrResult);
     return $strResult;
 }

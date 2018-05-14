@@ -15,5 +15,8 @@ class GenDiffTest extends TestCase
 
         $res2 = file_get_contents("tests/data/res2.txt");
         $this->assertEquals($res2, \Differ\genDiff('tests/data/before2.json', 'tests/data/after2.json'));
+
+        echo "\n";
+        print_r(\Differ\genDiff('tests/data/before2.json', 'tests/data/after2.json', 'plain'));
     }
 }
