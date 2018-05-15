@@ -2,14 +2,26 @@
 namespace Differ\RenderJson;
 
 use function Differ\stringify;
+use function Funct\Collection\flattenAll;
+use function Funct\Collection\flatten;
 
 function renderJson($astTree)
 {
-    $array = renderArray($astTree);
+    $flatArray = renderArray($astTree);
+    $array = restructArray($flatArray);
     $jsonString = toJson($array);
     return $jsonString;
 }
-
+function restructArray($flatArray)
+{
+    $arrayNumeric = array_chunk($flatArray, 3);
+    $funcArrayReduce = function ($item, $value) use ($iters, $path) {
+        $item[$value[0]] = [$value[1], $value[2]];
+        return $item;
+    };
+    $arrResult = array_reduce($arrayNumeric, $funcArrayReduce);
+    return $arrResult;
+}
 function toJson($array)
 {
     return json_encode($array);
@@ -19,63 +31,64 @@ function renderArray($astTree, $path = "")
 {
     $iterInserted = function ($value, $path) {
         if ($value['children']) {
-            $arr[] = "$path{$value['key']}\n\ncomplex value\n";
+            $arr[] = $path . $value['key'];
+            $arr[] = null;
+            $arr[] = "complex add";
             $arr[] = renderArray($value['children'], "$path{$value['key']}.");
         } else {
-            $arr[] = "$path{$value['key']}\n\ncomplex value\n";
+            $arr[] = $path . $value['key'];
+            $arr[] = null;
+            $arr[] = $value['newValue'];
         }
-        $str = implode('', $arr);
-        return $str;
+        return flatten($arr, 2);
     };
     $iterDeleted = function ($value, $path) {
         if ($value['children']) {
-            $arr[] = "$path{$value['key']}\ncomplex value\n\n";
+            $arr[] = $path . $value['key'];
+            $arr[] = "complex del";
+            $arr[] = null;
             $arr[] = renderArray($value['children'], "$path{$value['key']}.");
         } else {
-            $arr[] = "$path{$value['key']}\n{$value['oldValue']}\n\n";
+            $arr[] = $path . $value['key'];
+            $arr[] = $value['oldValue'];
+            $arr[] = null;
         }
-        $str = implode('', $arr);
-        return $str;
+        return flatten($arr);
     };
     $iterNotChanged = function ($value, $path) {
         if ($value['children']) {
-            $str = renderArray($value['children'], "$path{$value['key']}.");
+            $arr[] = $path . $value['key'];
+            $arr[] = "complex";
+            $arr[] = "complex";
+            $arr[] = renderArray($value['children'], "$path{$value['key']}.");
         } else {
-            $str = "";
+            $arr[] = $path . $value['key'];
+            $arr[] = $value['oldValue'];
+            $arr[] = $value['newValue'];
         }
-        return $str;
+        return flatten($arr);
     };
     $iterChanged = function ($value, $path) {
         if ($value['children']) {
-            throw new Exception("Error in the generate AST tree" . PHP_EOL);
         } else {
-            $str = "Property '$path{$value['key']}' was changed. From '" . stringify($value['oldValue']) . "' to '"
-                . stringify($value['newValue']) . "'" . PHP_EOL;
+            $arr[] = $path . $value['key'];
+            $arr[] = $value['oldValue'];
+            $arr[] = $value['newValue'];
         }
-        return $str;
+        return flatten($arr);
     };
 
     $iters = [
-        'inserted'      => "+",
-        'deleted'       => "-",
-        'not changed'   => "=",
-        'changed'       => "±"
+        'inserted'      => $iterInserted,
+        'deleted'       => $iterDeleted,
+        'not changed'   => $iterNotChanged,
+        'changed'       => $iterChanged
     ];
     $funcArrayReduce = function ($item, $value) use ($iters, $path) {
-        if ($value['children']) {
-            $item[ $iters[$value['type']] . $path . $value['key'] ] =
-                renderArray($value['children'], "$path{$value['key']}.");
-        } else {
-            $item[ $iters[$value['type']] . $path . $value['key'] ] = [$value['oldValue'], $value['newValue']];
-        }
-        return $item;
+        $item[] = $iters[$value['type']]($value, $path);
+        return flatten($item);
     };
-
-    // $funcArrayReduce = function ($item, $value) use ($iters, $path) {
-    //     [$k, $v] = $iters[$value['type']]($value, $path);
-    //     $item[$k] = $v;
-    //     return $item;
-    // };
     $arrResult = array_reduce($astTree, $funcArrayReduce);
+
     return $arrResult;
 }
