@@ -12,20 +12,6 @@ function renderJson($astTree)
     $jsonString = toJson($array);
     return $jsonString;
 }
-function restructArray($flatArray)
-{
-    $arrayNumeric = array_chunk($flatArray, 3);
-    $funcArrayReduce = function ($item, $value) {
-        $item[$value[0]] = [$value[1], $value[2]];
-        return $item;
-    };
-    $arrResult = array_reduce($arrayNumeric, $funcArrayReduce);
-    return $arrResult;
-}
-function toJson($array)
-{
-    return json_encode($array);
-}
 
 function renderArray($astTree, $path = "")
 {
@@ -91,4 +77,18 @@ function renderArray($astTree, $path = "")
     $arrResult = array_reduce($astTree, $funcArrayReduce);
 
     return $arrResult;
+}
+function restructArray($flatArray)
+{
+    $arrayNumeric = array_chunk($flatArray, 3);
+    $funcArrayReduce = function ($item, $value) {
+        $item[$value[0]] = [$value[1], $value[2]];
+        return $item;
+    };
+    $arrResult = array_reduce($arrayNumeric, $funcArrayReduce);
+    return $arrResult;
+}
+function toJson($array)
+{
+    return json_encode($array);
 }

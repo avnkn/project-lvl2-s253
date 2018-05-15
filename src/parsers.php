@@ -5,17 +5,15 @@ use Symfony\Component\Yaml\Yaml;
 
 function parsingString($stringFromFile, $extensionFile)
 {
-    if (!in_array($extensionFile, ["yaml", "yml", "ini", "json"])) {
-        throw new Exception("The extension files is not: 'yaml', 'yml', 'ini', 'json'.\n" . PHP_EOL);
+    if (!in_array($extensionFile, ["yaml", "yml", "json"])) {
+        throw new Exception("The extension files is not: 'yaml', 'yml', 'json'.\n" . PHP_EOL);
     }
     $arr =[
         "yaml" => "Differ\Parsers\yamlParse",
         "yml"  => "Differ\Parsers\yamlParse",
-        "ini"  => "null",
         "json" => "Differ\Parsers\jsonParse"
     ];
-    $nameFunc =  $arr[$extensionFile];
-    $arrayFromFile = $nameFunc($stringFromFile);
+    $arrayFromFile = $arr[$extensionFile]($stringFromFile);
     return $arrayFromFile;
 }
 

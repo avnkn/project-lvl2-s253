@@ -17,7 +17,7 @@ Usage:
 
 Options:
   -h --help                     Show this screen
-  --format <fmt>                Report format [default: pretty]
+  --format <fmt>                Report format: plain, json [default: pretty]
 DOC;
 $args = Docopt::handle($doc);
 $firstFileName = $args["<firstFile>"];
