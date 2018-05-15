@@ -48,7 +48,7 @@ function genAST($firstFileArray, $secondFileArray)
                         "type" => "deleted",
                         "oldValue" => "",
                         "newValue" => "",
-                        "children" => genAST($firstFileArray[$key], $secondFileArray[$key])
+                        "children" => genAST($firstFileArray[$key], [])
                     ];
                 } else {
                     $item[] = [
