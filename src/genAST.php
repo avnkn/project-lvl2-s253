@@ -67,7 +67,7 @@ function genAST($firstFileArray, $secondFileArray)
                     "type" => "inserted",
                     "oldValue" => "",
                     "newValue" => "",
-                    "children" => genAST($firstFileArray[$key], $secondFileArray[$key])
+                    "children" => genAST([], $secondFileArray[$key])
                 ];
             } else {
                 $item[] = [
