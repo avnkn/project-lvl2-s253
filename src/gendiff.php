@@ -59,14 +59,9 @@ function getFileExtension($filename)
 function arrayUniqueKey($array1, $array2)
 {
     $arrResult1 = array_keys($array1);
-    print_r($array1);
-    print_r($array2);
     $arrResult2 = array_keys($array2);
-    print_r($arrResult1);
-    print_r($arrResult2);
     $mergeKey = array_merge($arrResult1, $arrResult2);
     $unionKey = array_unique($mergeKey);
-    print_r($unionKey);
     return $unionKey;
 }
 
