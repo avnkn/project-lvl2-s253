@@ -3,8 +3,7 @@ namespace Differ\AST;
 
 function genAST($firstFileArray, $secondFileArray)
 {
-    $unionArray = \Differ\unionKey($firstFileArray, $secondFileArray);
-    $unionArrrayKey = array_keys($unionArray);
+    $arrayUniqueKey = \Differ\arrayUniqueKey($firstFileArray, $secondFileArray);
     if (!is_array($firstFileArray)) {
         $firstFileArray =[];
     }
@@ -81,6 +80,6 @@ function genAST($firstFileArray, $secondFileArray)
         }
         return $item;
     };
-    $arrResult = array_reduce($unionArrrayKey, $funcArrayReduce);
+    $arrResult = array_reduce($arrayUniqueKey, $funcArrayReduce);
     return $arrResult;
 }
