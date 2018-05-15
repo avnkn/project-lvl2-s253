@@ -27,6 +27,7 @@
     "files": [
         "src/gendiff.php",
         "src/parsers.php",
+        "src/genAST.php",
         "src/renderPretty.php",
         "src/renderPlain.php",
         "src/renderJson.php"

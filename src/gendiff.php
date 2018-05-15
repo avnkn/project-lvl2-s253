@@ -23,13 +23,13 @@ function genResultString($arrayFromFile1, $arrayFromFile2, $format)
     if (!in_array($format, ["pretty", "plain", "json"])) {
         throw new Exception("The format output is not: 'pretty', 'plain', 'json'.\n" . PHP_EOL);
     }
-    $arr =[
+    $parsers =[
         "pretty" => 'Differ\RenderPretty\renderPretty',
         "plain"  => 'Differ\RenderPlain\renderPlain',
         "json"   => 'Differ\RenderJson\renderJson'
     ];
-    $nameFunc =  $arr[$format];
-    $resultString = $nameFunc($arrayFromFile1, $arrayFromFile2);
+    $astTree = \Differ\AST\genAST($arrayFromFile1, $arrayFromFile2);
+    $resultString = $parsers[$format]($astTree);
     return $resultString;
 }
 
@@ -58,8 +58,16 @@ function getFileExtension($filename)
 
 function unionKey($array1, $array2)
 {
-    $arrResult1 = array_map(null, $array1);
-    $arrResult2 = array_map(null, $array2);
+    if (is_array($array1)) {
+        $arrResult1 = array_map(null, $array1);
+    } else {
+        $arrResult1 =[];
+    }
+    if (is_array($array2)) {
+        $arrResult2 = array_map(null, $array2);
+    } else {
+        $arrResult2 =[];
+    }
     $unionKey = array_merge($arrResult1, $arrResult2);
     return $unionKey;
 }

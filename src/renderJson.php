@@ -1,97 +1,81 @@
 <?php
-
 namespace Differ\RenderJson;
 
 use function Differ\stringify;
 
-function renderJson($arrayFromFile1, $arrayFromFile2)
+function renderJson($astTree)
 {
-    $astTree = genJsonDiffArray($arrayFromFile1, $arrayFromFile2);
-    $resultArray = genJsonArrayIsAst($astTree);
-    $resultString = json_encode($resultArray);
-    return $resultString;
+    $array = renderArray($astTree);
+    $jsonString = toJson($array);
+    return $jsonString;
 }
 
-function genJsonDiffArray($firstFileArray, $secondFileArray)
+function toJson($array)
 {
-    $unionArray = \Differ\unionKey($firstFileArray, $secondFileArray);
-    $unionArrrayKey = array_keys($unionArray);
-    $funcArrayReduce = function ($item, $key) use ($firstFileArray, $secondFileArray) {
-        if (array_key_exists($key, $firstFileArray)) {
-            if (array_key_exists($key, $secondFileArray)) {
-                if (!is_array($firstFileArray[$key]) and !is_array($secondFileArray[$key])) {
-                    if ($firstFileArray[$key] == $secondFileArray[$key]) {
-                        $item[] = [
-                            "key" => "$key",
-                            "diff" => "",
-                            "children" => $secondFileArray[$key]
-                        ];
-                    } else {
-                        $item[] = [
-                            "key" => "$key",
-                            "diff" => "-",
-                            "children" => $firstFileArray[$key]
-                        ];
-                        $item[] = [
-                            "key" => "$key",
-                            "diff" => "+",
-                            "children" => $secondFileArray[$key]
-                        ];
-                    }
-                } else {
-                    $item[] = [
-                        "key" => "$key",
-                        "diff" => "",
-                        "children" => genJsonDiffArray($firstFileArray[$key], $secondFileArray[$key])
-                    ];
-                }
-            } else {
-                if (is_array($firstFileArray[$key])) {
-                    $item[] = [
-                        "key" => "$key",
-                        "diff" => "-",
-                        "children" => genJsonDiffArray($firstFileArray[$key], $firstFileArray[$key])
-                    ];
-                } else {
-                    $item[] = [
-                        "key" => "$key",
-                        "diff" => "-",
-                        "children" => $firstFileArray[$key]
-                    ];
-                }
-            }
+    return json_encode($array);
+}
+
+function renderArray($astTree, $path = "")
+{
+    $iterInserted = function ($value, $path) {
+        if ($value['children']) {
+            $arr[] = "$path{$value['key']}\n\ncomplex value\n";
+            $arr[] = renderArray($value['children'], "$path{$value['key']}.");
         } else {
-            if (is_array($secondFileArray[$key])) {
-                $item[] = [
-                    "key" => "$key",
-                    "diff" => "+",
-                    "children" => genJsonDiffArray($secondFileArray[$key], $secondFileArray[$key])
-                ];
-            } else {
-                $item[] = [
-                    "key" => "$key",
-                    "diff" => "+",
-                    "children" => $secondFileArray[$key]
-                ];
-            }
+            $arr[] = "$path{$value['key']}\n\ncomplex value\n";
+        }
+        $str = implode('', $arr);
+        return $str;
+    };
+    $iterDeleted = function ($value, $path) {
+        if ($value['children']) {
+            $arr[] = "$path{$value['key']}\ncomplex value\n\n";
+            $arr[] = renderArray($value['children'], "$path{$value['key']}.");
+        } else {
+            $arr[] = "$path{$value['key']}\n{$value['oldValue']}\n\n";
+        }
+        $str = implode('', $arr);
+        return $str;
+    };
+    $iterNotChanged = function ($value, $path) {
+        if ($value['children']) {
+            $str = renderArray($value['children'], "$path{$value['key']}.");
+        } else {
+            $str = "";
+        }
+        return $str;
+    };
+    $iterChanged = function ($value, $path) {
+        if ($value['children']) {
+            throw new Exception("Error in the generate AST tree" . PHP_EOL);
+        } else {
+            $str = "Property '$path{$value['key']}' was changed. From '" . stringify($value['oldValue']) . "' to '"
+                . stringify($value['newValue']) . "'" . PHP_EOL;
+        }
+        return $str;
+    };
+
+    $iters = [
+        'inserted'      => "+",
+        'deleted'       => "-",
+        'not changed'   => "=",
+        'changed'       => "±"
+    ];
+    $funcArrayReduce = function ($item, $value) use ($iters, $path) {
+        if ($value['children']) {
+            $item[ $iters[$value['type']] . $path . $value['key'] ] =
+                renderArray($value['children'], "$path{$value['key']}.");
+        } else {
+            $item[ $iters[$value['type']] . $path . $value['key'] ] = [$value['oldValue'], $value['newValue']];
         }
         return $item;
     };
 
-    $arrResult = array_reduce($unionArrrayKey, $funcArrayReduce);
-    return $arrResult;
-}
-
-function genJsonArrayIsAst($astTree)
-{
-    $funcArrayReduce = function ($item, $value) {
-        if (is_array($value['children'])) {
-            $item[($value['diff'] . $value['key'])] = genJsonArrayIsAst($value['children'], $indentActual);
-        } else {
-            $item[($value['diff'] . $value['key'])] = stringify($value['children']);
-        }
-        return $item;
-    };
-    $arrResult = array_reduce($astTree, $funcArrayReduce, $initial);
+    // $funcArrayReduce = function ($item, $value) use ($iters, $path) {
+    //     [$k, $v] = $iters[$value['type']]($value, $path);
+    //     $item[$k] = $v;
+    //     return $item;
+    // };
+    $arrResult = array_reduce($astTree, $funcArrayReduce);
     return $arrResult;
 }
