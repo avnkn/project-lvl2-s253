@@ -15,7 +15,7 @@ function renderJson($astTree)
 function restructArray($flatArray)
 {
     $arrayNumeric = array_chunk($flatArray, 3);
-    $funcArrayReduce = function ($item, $value) use ($iters, $path) {
+    $funcArrayReduce = function ($item, $value) {
         $item[$value[0]] = [$value[1], $value[2]];
         return $item;
     };
