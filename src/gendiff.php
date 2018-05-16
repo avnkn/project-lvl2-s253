@@ -4,18 +4,19 @@ namespace Differ;
 use Differ\Parsers;
 use \Exception;
 use Funct\Collection;
+use function Differ\Render\render;
 
 function genDiff($pathToFile1, $pathToFile2, $format = "pretty")
 {
     try {
         $array1 = getArray($pathToFile1);
         $array2 = getArray($pathToFile2);
+        $astTree = \Differ\AST\genAST($array1, $array2);
+        $resultStr = render($astTree, $format);
     } catch (Exception $e) {
         fwrite(STDERR, $e->getMessage());
         return null;
     }
-    $astTree = \Differ\AST\genAST($array1, $array2);
-    $resultStr = render($astTree, $format);
     return $resultStr;
 }
 
@@ -39,19 +40,4 @@ function getExtension($filename)
 {
     $path_info = pathinfo($filename);
     return $path_info['extension'];
-}
-
-function render($astTree, $format)
-{
-
-    if (!in_array($format, ["pretty", "plain", "json"])) {
-        throw new Exception("The format output is not: 'pretty', 'plain', 'json'.\n" . PHP_EOL);
-    }
-    $parsers =[
-        "pretty" => 'Differ\RenderPretty\renderPretty',
-        "plain"  => 'Differ\RenderPlain\renderPlain',
-        "json"   => 'Differ\RenderJson\renderJson'
-    ];
-    $resultString = $parsers[$format]($astTree);
-    return $resultString;
 }

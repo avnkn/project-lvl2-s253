@@ -1,7 +1,7 @@
 <?php
 namespace Differ\RenderPlain;
 
-function renderPlain($astTree, $path = "")
+function render($astTree, $path = "")
 {
     $iterAdded = function ($value, $path) {
         $str = "Property '$path{$value['key']}' was added with value: '" . stringify($value['newValue'])
@@ -21,7 +21,7 @@ function renderPlain($astTree, $path = "")
         return $str;
     };
     $iterNested = function ($value, $path) {
-        $str = renderPlain($value['children'], "$path{$value['key']}.");
+        $str = render($value['children'], "$path{$value['key']}.");
         return $str;
     };
     $iters = [

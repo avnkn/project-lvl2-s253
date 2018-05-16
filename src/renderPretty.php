@@ -1,16 +1,16 @@
 <?php
 namespace Differ\RenderPretty;
 
-function renderPretty($astTree)
+function render($astTree)
 {
     $arr[] = "{" . PHP_EOL;
-    $arr[] = render($astTree);
+    $arr[] = renderBody($astTree);
     $arr[] = "}" . PHP_EOL;
     $strResult = implode('', $arr);
     return $strResult;
 }
 
-function render($astTree, $level = 1)
+function renderBody($astTree, $level = 1)
 {
     $iterAdded = function ($value, $level) {
         $str = getIndent($level-1) . "  + " . $value['key'] . ": " . stringify($value['newValue'], $level) . PHP_EOL;
@@ -31,7 +31,7 @@ function render($astTree, $level = 1)
     };
     $iterNested = function ($value, $level) {
         $arr[] = getIndent($level) . $value['key'] . ": {" . PHP_EOL;
-        $arr[] = render($value['children'], ($level + 1));
+        $arr[] = renderBody($value['children'], ($level + 1));
         $arr[] = getIndent($level) . "}" . PHP_EOL;
         $str = implode('', $arr);
         return $str;

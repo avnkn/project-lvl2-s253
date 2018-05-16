@@ -28,6 +28,7 @@
         "src/gendiff.php",
         "src/parsers.php",
         "src/genAST.php",
+        "src/render.php",
         "src/renderPretty.php",
         "src/renderPlain.php",
         "src/renderJson.php"

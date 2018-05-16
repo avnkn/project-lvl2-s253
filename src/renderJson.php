@@ -5,7 +5,7 @@ use function Differ\stringify;
 use function Funct\Collection\flattenAll;
 use function Funct\Collection\flatten;
 
-function renderJson($astTree)
+function render($astTree)
 {
     $jsonString = toJson($astTree);
     return $jsonString;
