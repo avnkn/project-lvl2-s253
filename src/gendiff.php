@@ -55,16 +55,3 @@ function render($astTree, $format)
     $resultString = $parsers[$format]($astTree);
     return $resultString;
 }
-function stringify($arg)
-{
-    if (is_bool($arg)) {
-        if ($arg == true) {
-            $result = 'true';
-        } else {
-            $result = 'false';
-        }
-    } else {
-        $result = $arg;
-    }
-    return $result;
-}

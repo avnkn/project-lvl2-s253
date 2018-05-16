@@ -18,7 +18,7 @@ class GenDiffTest extends TestCase
 
         $resPlain1 = file_get_contents("tests/data/resPlain1.txt");
         $this->assertEquals($resPlain1, \Differ\genDiff('tests/data/before2.json', 'tests/data/after2.json', 'plain'));
-
+        
         $resJson1 = trim(file_get_contents("tests/data/resJson1.txt"));
         $this->assertEquals($resJson1, \Differ\genDiff('tests/data/before2.json', 'tests/data/after2.json', 'json'));
     }
