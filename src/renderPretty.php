@@ -49,7 +49,7 @@ function render($astTree, $level = 1)
         return $item;
     };
 
-    $arrResult = array_reduce($astTree, $funcArrayReduce, $initial);
+    $arrResult = array_reduce($astTree, $funcArrayReduce);
     $strResult = implode('', $arrResult);
     return $strResult;
 }
